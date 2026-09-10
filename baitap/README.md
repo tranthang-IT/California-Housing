@@ -17,12 +17,12 @@ Dự án áp dụng quy trình chuẩn của một Data Scientist:
 ## Kết quả Tổ chức Giải đấu (Model Selection)
 Trước khi tìm ra nhà vô địch, các mô hình đã được cho thi đấu vòng loại bằng phương pháp `cross_val_score` (cv=10). Dưới đây là sai số dự đoán trung bình (RMSE):
 
-- **LinearRegression:** 68,450 USD
-- **DecisionTreeRegressor:** 69,051 USD
-- **RandomForestRegressor:** 49,326 USD (Nhà vô địch)
+- **LinearRegression:** 69,104 USD
+- **DecisionTreeRegressor:** 71,630 USD
+- **RandomForestRegressor:** 50,436 USD (Nhà vô địch)
 
 Sau khi ép xung Random Forest bằng `GridSearchCV` (cv=5) trên không gian dữ liệu đã được áp dụng Feature Engineering và cho đi thi thật trên tập Test nguyên sơ, AI đạt được:
-- **Sai số RMSE Cuối cùng: 50,802 USD**
+- **Sai số RMSE Cuối cùng: 47,873 USD**
 
 ## Hạn chế và Hướng phát triển tương lai
 
@@ -48,18 +48,18 @@ Sau khi ép xung Random Forest bằng `GridSearchCV` (cv=5) trên không gian d�
 ```
 
 ### 2. Yêu cầu Thư viện (Requirements)
-Cài đặt các thư viện lõi của dự án bằng lệnh:
+Cài đặt các thư viện lõi của dự án bằng file `requirements.txt`:
 ```bash
-pip install pandas numpy matplotlib scikit-learn joblib
+pip install -r requirements.txt
 ```
 
 ### 3. Khởi chạy
-Mở Terminal và chạy file Python. 
+Mở Terminal và chạy file Python: 
 ```bash
 cd baitap
 python project_california.py
 ```
 **Lưu ý:**
 - Code được cấu hình mặc định đọc file dữ liệu bằng đường dẫn tương đối: `load_data(r"../datasets/housing.csv")`. 
-- Khi chạy, máy sẽ hiện ra biểu đồ Bản đồ Giá nhà. Bạn cần tắt cửa sổ biểu đồ (bấm nút X) để code tiếp tục chạy các bước huấn luyện mô hình ở phía sau.
-- Chạy xong, thư mục sẽ xuất hiện thêm file `california_housing_model.pkl`. Đây chính là "bộ não" AI đã học xong, sẵn sàng mang đi tích hợp vào Web/App.
+- Nếu muốn xem bản đồ nhiệt phân bố giá nhà, bạn có thể bỏ comment dòng `# display_data(data)` trong file script.
+- Chạy xong, thư mục sẽ xuất hiện thêm file `california_housing_model.pkl`. File này đã được đóng gói toàn bộ quy trình tiền xử lý (`full_pipeline`) kèm mô hình tối ưu nhất (`best_model`), sẵn sàng nhận trực tiếp DataFrame thô từ người dùng khi tích hợp vào Web/App (Streamlit, Flask, FastAPI).
