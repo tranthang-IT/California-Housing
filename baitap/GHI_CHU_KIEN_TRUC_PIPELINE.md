@@ -193,3 +193,56 @@ full_prediction_pipeline  (Pipeline LỚN - Xử lý DỌC toàn diện)
 * **ColumnTransformer:** Đóng vai trò nhạc trưởng phân phối cột nào vào pipeline nào (ngang).
 * **Pipeline lớn:** Ghép toàn bộ dây chuyền xử lý dữ liệu với Mô hình AI thành một thực thể duy nhất sẵn sàng sản xuất.
 
+---
+
+## 8. Pipeline Có Thể Thay Thế Model Để Dự Đoán Không? (Cơ Chế "Ủy Quyền" - Delegation)
+
+### Câu hỏi: `Pipeline` có thể thay thế `model` để gọi `.predict()` không?
+👉 **Trả lời:** **ĐÚNG VỀ MẶT SỬ DỤNG**, nhưng **VỀ BẢN CHẤT BÊN TRONG LÀ CƠ CHẾ ỦY QUYỀN (DELEGATION)**.
+
+### A. Góc nhìn bên ngoài (Người lập trình & Triển khai)
+Bạn hoàn toàn có thể coi `Pipeline` là một **"Siêu Mô Hình" (Meta-Estimator)**:
+* Cả `model` và `Pipeline` hoàn chỉnh đều sở hữu đầy đủ: `.fit()`, `.predict()`, `.score()`.
+* Thay vì phải viết 2 dòng code thủ công:
+  ```python
+  # Cách làm rườm rà:
+  X_test_prepared = full_pipeline.transform(X_test)
+  predictions = model.predict(X_test_prepared)
+  ```
+* Bạn **thay thế hoàn toàn** bằng 1 dòng lệnh duy nhất qua Pipeline:
+  ```python
+  # Cách chuyên nghiệp:
+  predictions = full_prediction_pipeline.predict(X_test)
+  ```
+
+### B. Bản chất bên trong (Hậu trường)
+Bản thân `Pipeline` **không có bất kỳ thuật toán AI nào** (không có cây quyết định, không có trọng số). Nó chỉ đóng vai trò là một **"Người đại diện" (Proxy / Wrapper)**:
+
+> 🏥 **Hình ảnh ẩn dụ dễ nhớ:**
+> * **`model`** = **Bác sĩ chuyên khoa**: Người duy nhất có chuyên môn để chẩn đoán bệnh (`predict`).
+> * **`Pipeline`** = **Dịch vụ Bệnh viện trọn gói**:
+>   1. Đón tiếp bệnh nhân và đưa đi làm xét nghiệm máu, chụp X-quang (`full_pipeline.transform()`).
+>   2. Mang toàn bộ kết quả xét nghiệm đã có đưa vào phòng cho Bác sĩ xem (`model.predict()`).
+>   3. Nhận phiếu chẩn đoán từ Bác sĩ và trả lại cho bệnh nhân.
+> 
+> 👉 Bệnh nhân chỉ cần đến **Bệnh viện (Pipeline)**, không cần tự mình chạy đi tìm phòng xét nghiệm rồi mới mang tới bác sĩ!
+
+### C. Điều kiện bắt buộc để Pipeline có hàm `.predict()`
+Pipeline chỉ có hàm `.predict()` khi và chỉ khi:
+> ⚠️ **Bước cuối cùng của Pipeline BẮT BUỘC phải là một Model (Estimator)**!
+* `full_prediction_pipeline`: Bước cuối là `RandomForestRegressor` -> **CÓ `.predict()`**.
+* `num_pipeline`: Bước cuối là `StandardScaler` (Transformer) -> **KHÔNG CÓ `.predict()`** (gọi sẽ văng lỗi `AttributeError`).
+
+### D. Sức mạnh thực chiến trong Production
+1. **Deploy cực gọn:** Người dùng nhập form web -> ném thẳng DataFrame thô vào `pipeline.predict(df)` -> Có ngay kết quả.
+2. **Tune đồng thời cả Tiền xử lý và Model trong `GridSearchCV`:**
+   ```python
+   # Tìm xem điền thiếu bằng median hay mean thì Random Forest cho kết quả tốt hơn:
+   param_grid = [{
+       "preparation__num_pipeline__imputer__strategy": ["median", "mean"],
+       "model__n_estimators": [10, 30, 50]
+   }]
+   grid_search = GridSearchCV(full_prediction_pipeline, param_grid, cv=5)
+   ```
+
+
