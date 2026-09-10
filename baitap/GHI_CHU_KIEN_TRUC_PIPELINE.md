@@ -115,3 +115,81 @@ model = joblib.load("california_housing_model.pkl")
 predicted_price = model.predict(raw_user_dataframe)
 ```
 Toàn bộ khâu kiểm tra missing data, tính feature mới, scale số, One-Hot đều diễn ra tự động và an toàn tuyệt đối.
+
+---
+
+## 7. Phân Biệt Sâu: `ColumnTransformer` vs `Pipeline` (Dòng Chảy Ngang vs Dòng Chảy Dọc)
+
+Thoạt nhìn, cả hai đều nhận danh sách các tuple `("tên", ...)` và đều có `fit`, `transform`. Nhưng **hướng xử lý dữ liệu của chúng vuông góc nhau**:
+
+> 🔑 **Nguyên tắc cốt lõi:**
+> * **`Pipeline` = DÒNG CHẢY DỌC (Nối tiếp - Tuần tự):** Trạm trước làm xong, lấy toàn bộ kết quả ném sang trạm sau.
+> * **`ColumnTransformer` = DÒNG CHẢY NGANG (Phân luồng - Song song):** Bổ dọc bảng dữ liệu thành các nhóm cột, cho đi vào các làn đường độc lập rồi ghép ngang lại.
+
+### A. So sánh trực quan về cấu trúc luồng
+
+```text
+1. PIPELINE (Xử lý DỌC - Dây chuyền sản xuất nối tiếp)
+   Dữ liệu vào
+       │
+       ▼
+   ┌───────────────────────┐
+   │ Bước 1: SimpleImputer │  (Điền NaN cho toàn bộ bảng)
+   └───────────┬───────────┘
+               │ (Kết quả bước 1 chuyển tiếp xuống bước 2)
+               ▼
+   ┌───────────────────────┐
+   │ Bước 2: StandardScaler│  (Scale toàn bộ bảng)
+   └───────────┬───────────┘
+               │ (Kết quả bước 2 chuyển tiếp xuống bước 3)
+               ▼
+   ┌───────────────────────┐
+   │ Bước 3: Model (nếu có)│  (Dự đoán kết quả)
+   └───────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────────
+
+2. COLUMNTRANSFORMER (Xử lý NGANG - Cổng phân luồng giao thông)
+                  Bảng dữ liệu ban đầu
+                          │
+          ┌───────────────┴───────────────┐
+          │ (Tách các cột số)             │ (Tách các cột chữ)
+          ▼                               ▼
+   ┌──────────────┐                ┌──────────────┐
+   │ num_pipeline │ (Chạy độc lập) │ cat_pipeline │ (Chạy độc lập)
+   └──────┬───────┘                └──────┬───────┘
+          │                               │
+          └───────────────┬───────────────┘
+                          │ (np.hstack ghép ngang lại)
+                          ▼
+                  Mảng ma trận thống nhất
+```
+
+### B. Bảng đối chiếu chi tiết
+
+| Tiêu chí | `Pipeline` | `ColumnTransformer` |
+| :--- | :--- | :--- |
+| **Hướng dòng chảy** | **Dọc (Nối tiếp)**: Bước sau chờ kết quả bước trước. | **Ngang (Song song)**: Các nhóm cột được xử lý độc lập. |
+| **Phạm vi tác động** | Tác động lên **toàn bộ dữ liệu** nó nhận được. | Chỉ tác động lên **danh sách các cột được chỉ định**. |
+| **Cú pháp tuple** | `("tên", Transformer_hoặc_Model)` *(Gồm 2 phần tử)* | `("tên", Transformer, [danh_sách_cột])` *(Gồm 3 phần tử)* |
+| **Chứa Model được không?** | **CÓ**. Bước cuối cùng có thể là Estimator/Model. | **KHÔNG**. Tất cả các nhánh bắt buộc phải là Transformer. |
+| **Có hàm `.predict()`?** | **CÓ** (nếu bước cuối là Model). | **KHÔNG BAO GIỜ**. |
+| **Kết quả đầu ra** | Dữ liệu sau khi đi hết trạm cuối cùng. | Mảng ma trận được ghép ngang (`np.hstack`) từ các nhánh. |
+
+### C. Cách kết hợp hoàn hảo trong dự án California Housing
+
+Trong dự án thực tế, người ta luôn kết hợp lồng ghép chúng lại với nhau theo cấu trúc:
+
+```text
+full_prediction_pipeline  (Pipeline LỚN - Xử lý DỌC toàn diện)
+│
+├── Bước 1: full_pipeline (ColumnTransformer - Phân nhánh NGANG)
+│   ├── Nhánh 'num_pipeline' (Pipeline con - DỌC): Imputer -> Adder -> Scaler
+│   └── Nhánh 'category_pipeline' (Pipeline con - DỌC): Imputer -> OneHot
+│
+└── Bước 2: best_model (Random Forest - Chốt chặn DỌC cuối cùng)
+```
+* **Các Pipeline con:** Chịu trách nhiệm xử lý tuần tự (dọc) cho từng loại dữ liệu chuyên biệt.
+* **ColumnTransformer:** Đóng vai trò nhạc trưởng phân phối cột nào vào pipeline nào (ngang).
+* **Pipeline lớn:** Ghép toàn bộ dây chuyền xử lý dữ liệu với Mô hình AI thành một thực thể duy nhất sẵn sàng sản xuất.
+
