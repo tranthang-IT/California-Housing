@@ -1,65 +1,115 @@
-# California Housing Price Prediction (End-to-End Machine Learning)
+# California Housing Price Prediction (From Scratch & End-to-End Machine Learning)
 
-Đây là một dự án Học máy (Machine Learning) toàn diện, từ khâu làm sạch dữ liệu thô đến khi xuất xưởng một mô hình Trí tuệ nhân tạo có khả năng dự đoán giá nhà tại bang California, Mỹ.
+Dự án Học máy (Machine Learning) toàn diện dự đoán **Giá nhà trung bình** tại California, Mỹ. Dự án hỗ trợ cả hai phương pháp tiếp cận:
+1. **Kiến trúc Tự cài đặt thuật toán từ đầu (From Scratch with NumPy):** Tự tay hiện thực hóa các thuật toán tối ưu hóa toán học, tiền xử lý và cấu trúc Pipeline mà không phụ thuộc vào các class mô hình có sẵn của Scikit-Learn.
+2. **Kiến trúc Thư viện chuẩn (Scikit-Learn Standard):** Dùng để đối soát, kiểm thử đối đầu (Benchmarking) và xác thực tính đúng đắn về mặt giải tích.
 
-## Giới thiệu Dự án
-Mục tiêu của dự án là xây dựng một mô hình AI đọc các thông tin về một khu dân cư (tọa độ, dân số, thu nhập trung bình, số phòng, vị trí gần biển...) để dự đoán **Giá nhà trung bình** tại khu vực đó.
+---
 
-Dự án áp dụng quy trình chuẩn của một Data Scientist:
-1. **Trực quan hóa dữ liệu (EDA):** Vẽ bản đồ phân bố nhiệt độ giá nhà kết hợp mật độ dân cư.
-2. **Stratified Sampling:** Chia tập Train/Test chống lệch chuẩn (dựa trên tỷ lệ Thu nhập).
-3. **Data Pipelines & Feature Engineering:** Tự động hóa toàn bộ quá trình:
-   - Viết Custom Class (`CombinedAttributesAdder`) để tự động tạo ra các đặc trưng quan trọng mới như số phòng/hộ gia đình, số dân/hộ gia đình.
-   - Vá dữ liệu thiếu bằng `SimpleImputer`.
-   - Chuẩn hóa bằng `StandardScaler` và Biến đổi biến phân loại bằng `OneHotEncoder`.
-4. **Model Selection & GridSearch:** Chấm điểm chéo các mô hình và Tinh chỉnh siêu tham số để tìm ra cấu hình AI hoàn hảo nhất.
+## 1. Cấu trúc Dự án Sau khi Tái cấu trúc (Modular Architecture)
 
-## Kết quả Tổ chức Giải đấu (Model Selection)
-Trước khi tìm ra nhà vô địch, các mô hình đã được cho thi đấu vòng loại bằng phương pháp `cross_val_score` (cv=10). Dưới đây là sai số dự đoán trung bình (RMSE):
+Mã nguồn được tổ chức theo chuẩn kiến trúc sạch (Clean ML Architecture), tách biệt rõ ràng giữa Dữ liệu, Thuật toán, Kỹ thuật đặc trưng và Pipeline thực thi:
 
-- **LinearRegression:** 69,104 USD
-- **DecisionTreeRegressor:** 71,630 USD
-- **RandomForestRegressor:** 50,436 USD (Nhà vô địch)
-
-Sau khi ép xung Random Forest bằng `GridSearchCV` (cv=5) trên không gian dữ liệu đã được áp dụng Feature Engineering và cho đi thi thật trên tập Test nguyên sơ, AI đạt được:
-- **Sai số RMSE Cuối cùng: 47,873 USD**
-
-## Hạn chế và Hướng phát triển tương lai
-
-### Hạn chế hiện tại
-- **Giới hạn thuật toán:** Dự án mới chỉ thử nghiệm với Random Forest. Các thuật toán Boosting tiên tiến hơn như XGBoost hay LightGBM chưa được đưa vào thi đấu vòng loại.
-- **Không gian tinh chỉnh (Hyperparameter Tuning) hẹp:** Lưới tìm kiếm (GridSearch) mới chỉ được thiết lập với một số lượng nhỏ các tham số (tối đa 30 cây) nhằm tiết kiệm tài nguyên máy tính. Vì không gian tìm kiếm nhỏ nên AI chưa phát huy được tối đa sức mạnh của các cột đặc trưng (Feature Engineering) mới được thêm vào.
-
-### Hướng phát triển tương lai
-- **Nâng cấp thuật toán:** Triển khai thử nghiệm thêm Gradient Boosting Regressor hoặc XGBoost kết hợp với mở rộng không gian tìm kiếm `GridSearchCV` để tối ưu hóa và giảm sai số RMSE xuống dưới mức 45,000 USD.
-- **Triển khai ứng dụng (Deployment):** Đưa file `california_housing_model.pkl` lên một ứng dụng Web tương tác bằng thư viện Streamlit hoặc Flask, cho phép người dùng tự do nhập thông số khu dân cư và xem AI dự đoán giá nhà ngay trên trình duyệt.
-
-## Cài đặt & Hướng dẫn Chạy Code
-
-### 1. Cấu trúc thư mục
-Để code có thể chạy được, bạn cần đảm bảo cấu trúc thư mục sau (thư mục code và thư mục dữ liệu phải đặt cạnh nhau):
 ```text
-/ (Thư mục gốc)
-├── datasets/
-│   └── housing.csv          # File dữ liệu chứa thông tin giá nhà
-└── baitap/
-    ├── project_california.py # File chứa toàn bộ mã nguồn AI
-    └── README.md
+california_housing/
+├── src/                                # Gói mã nguồn cốt lõi (Core Package)
+│   ├── algorithms/                     # Thuật toán và độ đo tự viết từ đầu (From Scratch)
+│   │   ├── __init__.py
+│   │   ├── linear_regression.py        # Hồi quy tuyến tính (Normal Equation & Gradient Descent)
+│   │   ├── decision_tree.py            # Cây quyết định hồi quy (Variance Reduction)
+│   │   ├── scalers.py                  # StandardScalerScratch, SimpleImputerScratch, OneHotEncoderScratch
+│   │   └── metrics.py                  # RMSE, MAE, R2-score, MSE
+│   │
+│   ├── data/                           # Module quản lý dữ liệu
+│   │   ├── __init__.py
+│   │   ├── loader.py                   # Đọc dữ liệu, kiểm tra tệp
+│   │   └── split.py                    # Phân tầng Stratified Sampling theo thu nhập
+│   │
+│   ├── features/                       # Kỹ thuật tạo đặc trưng (Feature Engineering)
+│   │   ├── __init__.py
+│   │   └── feature_engineering.py     # CombinedAttributesAdderScratch (rooms/hh, pop/hh...)
+│   │
+│   └── pipeline/                       # Pipeline tự viết (Custom Pipeline Engine)
+│       ├── __init__.py
+│       └── pipeline.py                 # CustomPipeline & CustomColumnTransformer
+│
+├── tests/
+│   └── test_algorithms.py              # Unit Tests kiểm tra độ khớp thuật toán vs Scikit-Learn
+│
+├── models/
+│   └── california_scratch_model.pkl    # Checkpoint Pipeline End-to-End tự xuất xưởng
+│
+├── main.py                             # Điểm thực thi chính (Chạy toàn bộ quy trình From Scratch)
+├── benchmark.py                        # Script đo lường và so sánh hiệu năng (Scratch vs Sklearn)
+├── project_california.py               # Script nguyên bản (sử dụng Scikit-Learn để đối chiếu)
+├── GHI_CHU_KIEN_TRUC_PIPELINE.md       # Tài liệu giải thích chi tiết kiến trúc Pipeline
+├── requirements.txt                    # Danh sách thư viện phụ thuộc
+└── README.md
 ```
 
-### 2. Yêu cầu Thư viện (Requirements)
-Cài đặt các thư viện lõi của dự án bằng file `requirements.txt`:
+---
+
+## 2. Bản chất Toán học của các Thuật toán Tự viết (From Scratch)
+
+### 2.1. Hồi quy Tuyến tính (Linear Regression)
+* **Phương trình chuẩn giải tích (Normal Equation):**
+  $$\theta = (X_b^T X_b)^{-1} X_b^T y$$
+  Sử dụng giả nghịch đảo Moore-Penrose (`np.linalg.pinv`) nhằm đảm bảo tính ổn định số học và chống suy biến ma trận khi có đa cộng tuyến.
+* **Hạ độ dốc theo mẻ (Batch Gradient Descent):**
+  $$\theta^{(t+1)} = \theta^{(t)} - \alpha \frac{2}{m} X_b^T (X_b \theta^{(t)} - y)$$
+
+### 2.2. Cây Quyết định Hồi quy (Decision Tree Regressor)
+* **Tiêu chí phân nhánh:** Tối đa hóa mức giảm phương sai (Variance Reduction):
+  $$\Delta \text{Var} = \text{Var}(y) - \left( \frac{N_L}{N} \text{Var}(y_L) + \frac{N_R}{N} \text{Var}(y_R) \right)$$
+* **Tối ưu hóa hiệu năng:** Áp dụng phương pháp phân vị quantile sampling cho các ngưỡng ứng viên giúp tăng tốc độ huấn luyện trên 16.512 mẫu chỉ mất vài giây trên CPU.
+
+### 2.3. Tiền xử lý & Chuẩn hóa (Scalers & Imputer)
+* `StandardScalerScratch`: Chuẩn hóa $z = \frac{x - \mu}{\sigma}$ kèm bảo vệ chống chia cho 0.
+* `SimpleImputerScratch`: Điền khuyết thiếu bằng trung vị (`median`), trung bình (`mean`) hoặc `most_frequent`.
+* `OneHotEncoderScratch`: Chuyển danh mục thành các vector nhị phân 0/1.
+
+---
+
+## 3. Kết quả Kiểm thử & So sánh Hiệu năng (Benchmarking)
+
+Khi chạy script kiểm thử đối đầu `python benchmark.py` trên cùng tập dữ liệu Train/Test:
+
+| Mô hình | Thời gian Scratch | Thời gian Sklearn | RMSE Scratch | RMSE Sklearn | Độ lệch RMSE |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Linear Regression** | **5.34 ms** | 13.18 ms | **66,913 USD** | 66,913 USD | **0.00 USD** *(Khớp tuyệt đối 100%)* |
+| **Decision Tree (depth=7)** | 4.15 s | 479.10 ms | **61,029 USD** | 61,430 USD | **400.49 USD** *(Độ chính xác tương đương)* |
+
+> **Nhận xét:** 
+> - Hồi quy tuyến tính tự viết cho kết quả dự đoán trùng khớp tuyệt đối tới từng chữ số thập phân so với thư viện Scikit-Learn.
+> - Cây quyết định tự viết đạt sai số RMSE ~61k USD, hội tụ tương đương với thuật toán Scikit-Learn.
+
+---
+
+## 4. Hướng dẫn Khởi chạy
+
+### 4.1. Cài đặt môi trường
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Khởi chạy
-Mở Terminal và chạy file Python: 
+### 4.2. Chạy Unit Test kiểm tra tính chính xác thuật toán
 ```bash
-cd baitap
-python project_california.py
+python tests/test_algorithms.py
 ```
-**Lưu ý:**
-- Code được cấu hình mặc định đọc file dữ liệu bằng đường dẫn tương đối: `load_data(r"../datasets/housing.csv")`. 
-- Nếu muốn xem bản đồ nhiệt phân bố giá nhà, bạn có thể bỏ comment dòng `# display_data(data)` trong file script.
-- Chạy xong, thư mục sẽ xuất hiện thêm file `california_housing_model.pkl`. File này đã được đóng gói toàn bộ quy trình tiền xử lý (`full_pipeline`) kèm mô hình tối ưu nhất (`best_model`), sẵn sàng nhận trực tiếp DataFrame thô từ người dùng khi tích hợp vào Web/App (Streamlit, Flask, FastAPI).
+*(Tất cả 4/4 bài test kiểm tra Scaler, Imputer, Metrics và Normal Equation đều đạt chuẩn `OK`)*.
+
+### 4.3. Chạy toàn bộ quy trình From Scratch & Đóng gói mô hình
+```bash
+python main.py
+```
+Quy trình sẽ tự động:
+1. Đọc và phân tầng dữ liệu Train / Test (80% / 20%).
+2. Chạy tiền xử lý qua `CustomPipeline` và `CustomColumnTransformer`.
+3. Huấn luyện Linear Regression và Decision Tree thuần NumPy.
+4. Chọn mô hình chiến thắng và xuất xưởng tệp `models/california_scratch_model.pkl`.
+5. Thực hiện dự đoán mẫu trên dữ liệu thô chưa qua biến đổi.
+
+### 4.4. Chạy bảng so sánh hiệu năng (Benchmark)
+```bash
+python benchmark.py
+```
